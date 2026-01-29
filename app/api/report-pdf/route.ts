@@ -27,14 +27,7 @@ export async function POST(req: Request) {
 
     const pdfBytes = await buildPdf(report, roleTarget || "");
 
-    // ✅ FIX: NextResponse espera BodyInit (ArrayBuffer/Blob/ReadableStream/etc)
-    // Convertimos Uint8Array -> ArrayBuffer (recortado al rango exacto)
-    const body = pdfBytes.buffer.slice(
-      pdfBytes.byteOffset,
-      pdfBytes.byteOffset + pdfBytes.byteLength
-    );
-
-    return new NextResponse(body, {
+    return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
@@ -48,6 +41,7 @@ export async function POST(req: Request) {
     );
   }
 }
+
 
 async function buildPdf(r: ReviewResult, roleTarget: string) {
   const pdf = await PDFDocument.create();
