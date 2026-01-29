@@ -1,4 +1,4 @@
-// ✅ Archivo: app/api/report-pdf/route.ts
+// app/api/report-pdf/route.ts
 import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
@@ -27,7 +27,8 @@ export async function POST(req: Request) {
 
     const pdfBytes = await buildPdf(report, roleTarget || "");
 
-    // ✅ FIX: NextResponse espera BodyInit -> usamos ArrayBuffer
+    // ✅ FIX: NextResponse espera BodyInit (ArrayBuffer/Blob/ReadableStream/etc)
+    // Convertimos Uint8Array -> ArrayBuffer (recortado al rango exacto)
     const body = pdfBytes.buffer.slice(
       pdfBytes.byteOffset,
       pdfBytes.byteOffset + pdfBytes.byteLength
@@ -202,7 +203,7 @@ async function buildPdf(r: ReviewResult, roleTarget: string) {
     y -= 34;
   }
 
-  // ✅ Iconos vectoriales
+  // ✅ Iconos vectoriales (sin emoji)
   function drawCheckIcon(x: number, yy: number, size = 12) {
     page.drawRectangle({
       x,
@@ -234,7 +235,6 @@ async function buildPdf(r: ReviewResult, roleTarget: string) {
     const left = { x, y: yy - size + 2 };
     const right = { x: x + size, y: yy - size + 2 };
 
-    // fondo suave
     page.drawRectangle({
       x: x - 1,
       y: yy - size + 1,
@@ -244,12 +244,10 @@ async function buildPdf(r: ReviewResult, roleTarget: string) {
       borderWidth: 0,
     });
 
-    // triángulo contorno
     page.drawLine({ start: top, end: left, thickness: 1.2, color: BLACK });
     page.drawLine({ start: top, end: right, thickness: 1.2, color: BLACK });
     page.drawLine({ start: left, end: right, thickness: 1.2, color: BLACK });
 
-    // "!" dentro
     page.drawLine({
       start: { x: x + size / 2, y: yy - 3 },
       end: { x: x + size / 2, y: yy - size + 6 },
@@ -415,7 +413,7 @@ async function buildPdf(r: ReviewResult, roleTarget: string) {
     y -= 2;
   }
 
-  // Footer
+  // Footer por página
   const pages = pdf.getPages();
   for (let idx = 0; idx < pages.length; idx++) {
     const p = pages[idx];
