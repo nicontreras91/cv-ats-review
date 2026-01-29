@@ -8,14 +8,23 @@ export const runtime = "nodejs";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+type BestMatch = {
+  role: string;
+  match_score: number; // 0-100
+  why_fit: string[]; // 2-4
+  missing_keywords: string[]; // 5-12
+  recommended_changes: string[]; // 3-6
+};
+
 type ReviewResult = {
   ats_score: number;
   summary: string[];
-  top_fixes: { title: string; why: string; example_fix: string }[];
+  top_fixes: { title: string; why: string; example_fix: string }[]; // EXACTO 5
   ats_checklist: { item: string; status: "ok" | "warn"; note: string }[];
   suggested_keywords: string[];
-  rewritten_bullets: { original: string; improved: string }[];
+  rewritten_bullets: { original: string; improved: string }[]; // EXACTO 5
   template_outline: string[];
+  best_matches: BestMatch[]; // EXACTO 3
 };
 
 const ATS_SCHEMA = {
@@ -24,11 +33,19 @@ const ATS_SCHEMA = {
     additionalProperties: false,
     properties: {
       ats_score: { type: "number", minimum: 0, maximum: 100 },
-      summary: { type: "array", minItems: 3, maxItems: 6, items: { type: "string" } },
+
+      summary: {
+        type: "array",
+        minItems: 3,
+        maxItems: 5,
+        items: { type: "string" },
+      },
+
+      // ✅ EXACTO 5
       top_fixes: {
         type: "array",
-        minItems: 7,
-        maxItems: 7,
+        minItems: 5,
+        maxItems: 5,
         items: {
           type: "object",
           additionalProperties: false,
@@ -40,10 +57,11 @@ const ATS_SCHEMA = {
           required: ["title", "why", "example_fix"],
         },
       },
+
       ats_checklist: {
         type: "array",
-        minItems: 12,
-        maxItems: 18,
+        minItems: 10,
+        maxItems: 12,
         items: {
           type: "object",
           additionalProperties: false,
@@ -55,11 +73,19 @@ const ATS_SCHEMA = {
           required: ["item", "status", "note"],
         },
       },
-      suggested_keywords: { type: "array", minItems: 10, maxItems: 20, items: { type: "string" } },
+
+      suggested_keywords: {
+        type: "array",
+        minItems: 10,
+        maxItems: 18,
+        items: { type: "string" },
+      },
+
+      // ✅ EXACTO 5
       rewritten_bullets: {
         type: "array",
-        minItems: 6,
-        maxItems: 10,
+        minItems: 5,
+        maxItems: 5,
         items: {
           type: "object",
           additionalProperties: false,
@@ -70,7 +96,32 @@ const ATS_SCHEMA = {
           required: ["original", "improved"],
         },
       },
-      template_outline: { type: "array", minItems: 6, maxItems: 10, items: { type: "string" } },
+
+      template_outline: {
+        type: "array",
+        minItems: 5,
+        maxItems: 7,
+        items: { type: "string" },
+      },
+
+      // ✅ EXACTO 3
+      best_matches: {
+        type: "array",
+        minItems: 3,
+        maxItems: 3,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            role: { type: "string" },
+            match_score: { type: "number", minimum: 0, maximum: 100 },
+            why_fit: { type: "array", minItems: 2, maxItems: 4, items: { type: "string" } },
+            missing_keywords: { type: "array", minItems: 5, maxItems: 12, items: { type: "string" } },
+            recommended_changes: { type: "array", minItems: 3, maxItems: 6, items: { type: "string" } },
+          },
+          required: ["role", "match_score", "why_fit", "missing_keywords", "recommended_changes"],
+        },
+      },
     },
     required: [
       "ats_score",
@@ -80,6 +131,7 @@ const ATS_SCHEMA = {
       "suggested_keywords",
       "rewritten_bullets",
       "template_outline",
+      "best_matches",
     ],
   },
 } as const;
@@ -92,7 +144,6 @@ export async function POST(req: Request) {
 
     const form = await req.formData();
     const file = form.get("cv");
-    const roleTarget = (form.get("roleTarget")?.toString() || "").trim();
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "No llegó el archivo 'cv' (PDF)." }, { status: 400 });
@@ -107,7 +158,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "El PDF es muy grande. Máximo 5MB." }, { status: 400 });
     }
 
-    // ✅ Validación páginas (máx 2) ANTES de OpenAI
+    // ✅ Validación páginas (máx 2)
     const bytes = new Uint8Array(await file.arrayBuffer());
     let pageCount = 0;
     try {
@@ -124,56 +175,66 @@ export async function POST(req: Request) {
     const uploaded = await client.files.create({ file, purpose: "assistants" });
 
     const system = `
-Eres un revisor experto de CVs orientado a ATS.
-Reglas:
-- NO inventes datos: usa placeholders [X], [N], [CLP], [%].
-- Devuelve exactamente 7 top_fixes.
-- ats_checklist.note siempre string ("" si no aplica).
-- rewritten_bullets.original siempre string ("" si no existe claro).
-- Si no encuentras bullets textuales claros, usa frases exactas de Experiencia como 'original' (evita original vacío).
-- Responde SOLO con JSON que cumpla el schema.
+Eres un revisor experto de CVs orientado a ATS y selección ejecutiva.
+
+Reglas duras (NO negociables):
+- Responde SOLO con JSON válido que cumpla el schema (sin texto fuera del JSON).
+- NO inventes datos del candidato: si falta info usa placeholders [X], [N], [CLP], [%].
+- Devuelve exactamente 5 top_fixes (ni más ni menos).
+- Devuelve exactamente 5 rewritten_bullets (ni más ni menos).
+- best_matches debe venir EXACTO con 3 roles (ni más ni menos) y deben ser roles razonables según el CV real.
+- suggested_keywords: SOLO keywords ATS (sin nombres de campos como "original", "improved", "rewritten_bullets", etc).
+- NO incluyas fragmentos de JSON dentro de strings (por ejemplo: "]}, {").
+- Cada string debe ser texto humano limpio (sin llaves, sin comillas sueltas).
 `.trim();
 
     const user = `
-Analiza el CV adjunto (PDF, 1-2 páginas) y entrega un reporte ATS.
-Cargo objetivo (opcional): ${roleTarget || "No especificado (infierelo del CV)"}.
-Evalúa: formato ATS, secciones, keywords, logros, ortografía y claridad.
+Analiza el CV adjunto (PDF, 1-2 páginas) y entrega un reporte ATS ejecutivo y accionable.
+
+Instrucciones:
+- Evalúa formato ATS, secciones, keywords, logros, claridad y consistencia.
+- best_matches: elige los 3 cargos con mejor match para este CV, con:
+  - match_score (0-100)
+  - why_fit (2-4 bullets)
+  - missing_keywords (5-12)
+  - recommended_changes (3-6 cambios concretos)
 `.trim();
 
-    const resp = await client.responses.create({
-      model: "gpt-4o-mini",
-      input: [
-        { role: "system", content: system },
-        {
-          role: "user",
-          content: [
-            { type: "input_text", text: user },
-            { type: "input_file", file_id: uploaded.id },
-          ],
-        },
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "ats_review",
-          schema: ATS_SCHEMA.schema,
-          strict: true,
-        },
-      },
-      max_output_tokens: 1600,
-      temperature: 0,
+    // ✅ hacemos 2 intentos, pero SIEMPRE intentamos parsear aunque status venga "incomplete"
+    let resp = await callOpenAI({
+      system,
+      user,
+      fileId: uploaded.id,
+      schema: ATS_SCHEMA.schema,
+      schemaName: "ats_review",
+      maxOutputTokens: 1800,
     });
 
-    const raw = extractAnything(resp);
+    let raw = extractAnything(resp);
+    let parsed = raw ? robustJsonParse<ReviewResult>(raw) : { ok: false as const, error: "empty" };
+
+    if (!parsed.ok) {
+      // retry con un recordatorio fuerte
+      const system2 = `${system}\n\nSi fallas el schema, tu respuesta será descartada. JSON ÚNICO y válido.`;
+      resp = await callOpenAI({
+        system: system2,
+        user,
+        fileId: uploaded.id,
+        schema: ATS_SCHEMA.schema,
+        schemaName: "ats_review",
+        maxOutputTokens: 2000,
+      });
+
+      raw = extractAnything(resp);
+      parsed = raw ? robustJsonParse<ReviewResult>(raw) : { ok: false as const, error: "empty" };
+    }
 
     if (!raw || raw.trim().length < 2) {
       return NextResponse.json(
         { error: "Respuesta vacía desde OpenAI (no se pudo extraer contenido).", debug: summarizeResponseShape(resp) },
-        { status: 500 }
+        { status: 502 }
       );
     }
-
-    const parsed = robustJsonParse<ReviewResult>(raw);
 
     if (!parsed.ok) {
       return NextResponse.json(
@@ -181,7 +242,8 @@ Evalúa: formato ATS, secciones, keywords, logros, ortografía y claridad.
           error: "La IA devolvió una respuesta no-JSON (inesperado).",
           raw_length: raw.length,
           raw_snippet: raw.slice(0, 1200),
-          raw_tail: raw.slice(Math.max(0, raw.length - 300)),
+          raw_tail: raw.slice(Math.max(0, raw.length - 400)),
+          status: resp?.status || "unknown",
           debug: summarizeResponseShape(resp),
         },
         { status: 500 }
@@ -192,6 +254,39 @@ Evalúa: formato ATS, secciones, keywords, logros, ortografía y claridad.
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Error desconocido" }, { status: 500 });
   }
+}
+
+async function callOpenAI(args: {
+  system: string;
+  user: string;
+  fileId: string;
+  schema: any;
+  schemaName: string;
+  maxOutputTokens: number;
+}) {
+  return client.responses.create({
+    model: "gpt-4o-mini",
+    input: [
+      { role: "system", content: args.system },
+      {
+        role: "user",
+        content: [
+          { type: "input_text", text: args.user },
+          { type: "input_file", file_id: args.fileId },
+        ],
+      },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: args.schemaName,
+        schema: args.schema,
+        strict: true,
+      },
+    },
+    max_output_tokens: args.maxOutputTokens,
+    temperature: 0,
+  });
 }
 
 function extractAnything(resp: any): string {
@@ -217,6 +312,7 @@ function extractAnything(resp: any): string {
 
 function summarizeResponseShape(resp: any) {
   const summary: any = {
+    status: resp?.status,
     has_output_text: typeof resp?.output_text === "string" ? resp.output_text.length : false,
     output_count: Array.isArray(resp?.output) ? resp.output.length : 0,
     output_types: [] as any[],
@@ -229,7 +325,7 @@ function summarizeResponseShape(resp: any) {
         content_count: Array.isArray(msg?.content) ? msg.content.length : 0,
         content_types: Array.isArray(msg?.content) ? msg.content.map((c: any) => c?.type) : [],
         sample_text: Array.isArray(msg?.content)
-          ? (msg.content.find((c: any) => typeof c?.text === "string")?.text || "").slice(0, 120)
+          ? (msg.content.find((c: any) => typeof c?.text === "string")?.text || "").slice(0, 260)
           : "",
       });
     }
@@ -295,10 +391,5 @@ function tryDoubleParse<T>(s: string): { ok: true; value: T } | { ok: false } {
 }
 
 function unescapeJsonish(s: string): string {
-  return s
-    .replace(/\\n/g, "\n")
-    .replace(/\\r/g, "\r")
-    .replace(/\\t/g, "\t")
-    .replace(/\\"/g, '"')
-    .replace(/\\\\/g, "\\");
+  return s.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
 }
