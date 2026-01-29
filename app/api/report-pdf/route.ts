@@ -27,7 +27,13 @@ export async function POST(req: Request) {
 
     const pdfBytes = await buildPdf(report, roleTarget || "");
 
-    return new NextResponse(pdfBytes, {
+    // ✅ FIX: NextResponse espera BodyInit -> usamos ArrayBuffer
+    const body = pdfBytes.buffer.slice(
+      pdfBytes.byteOffset,
+      pdfBytes.byteOffset + pdfBytes.byteLength
+    );
+
+    return new NextResponse(body, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
@@ -196,7 +202,7 @@ async function buildPdf(r: ReviewResult, roleTarget: string) {
     y -= 34;
   }
 
-  // ✅ Iconos vectoriales (sin emojis como texto)
+  // ✅ Iconos vectoriales
   function drawCheckIcon(x: number, yy: number, size = 12) {
     page.drawRectangle({
       x,
@@ -228,18 +234,17 @@ async function buildPdf(r: ReviewResult, roleTarget: string) {
     const left = { x, y: yy - size + 2 };
     const right = { x: x + size, y: yy - size + 2 };
 
-    // Relleno simple con rectángulo suave detrás (evita dependencia de polygon)
+    // fondo suave
     page.drawRectangle({
       x: x - 1,
       y: yy - size + 1,
       width: size + 2,
       height: size + 2,
       color: rgb(1, 0.98, 0.86),
-      borderColor: undefined,
       borderWidth: 0,
     });
 
-    // Triángulo (contorno)
+    // triángulo contorno
     page.drawLine({ start: top, end: left, thickness: 1.2, color: BLACK });
     page.drawLine({ start: top, end: right, thickness: 1.2, color: BLACK });
     page.drawLine({ start: left, end: right, thickness: 1.2, color: BLACK });
@@ -326,7 +331,7 @@ async function buildPdf(r: ReviewResult, roleTarget: string) {
     y -= 10;
   }
 
-  // Checklist con iconos vectoriales
+  // Checklist
   blockTitle("Checklist ATS");
   const checklist = (r.ats_checklist || []).slice(0, 18);
 
@@ -424,5 +429,5 @@ async function buildPdf(r: ReviewResult, roleTarget: string) {
     });
   }
 
-  return await pdf.save();
+  return await pdf.save(); // Uint8Array
 }
