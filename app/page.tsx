@@ -25,7 +25,13 @@ function Spinner({ className = "" }: { className?: string }) {
   return (
     <svg className={"animate-spin " + className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" className="opacity-25" />
-      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="opacity-90" />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        className="opacity-90"
+      />
     </svg>
   );
 }
@@ -58,10 +64,10 @@ export default function Home() {
   const [uiMsg, setUiMsg] = useState<string | null>(null);
   const supportButtonClass =
     "inline-flex items-center justify-center text-center whitespace-nowrap " +
-  "rounded-xl px-5 py-2.5 text-sm font-semibold text-white " +
-  "w-full sm:w-[240px] " +
-  "bg-[#5B7CFF] hover:bg-[#4C6FFF] active:bg-[#3F63FF] " +
-  "shadow-[0_8px_22px_rgba(91,124,255,0.28)] border border-black/10";
+    "rounded-xl px-5 py-2.5 text-sm font-semibold text-white " +
+    "w-full sm:w-[240px] " +
+    "bg-[#5B7CFF] hover:bg-[#4C6FFF] active:bg-[#3F63FF] " +
+    "shadow-[0_8px_22px_rgba(91,124,255,0.28)] border border-black/10";
 
   // ✅ LINK DONACIÓN (monto libre) — reemplaza por tu link real:
   const DONATE_URL = "https://link.mercadopago.cl/revicv";
@@ -190,28 +196,68 @@ export default function Home() {
   const MUTED = "text-black/70";
   const CARD = "bg-white border border-black rounded-2xl";
 
+  // ✅ Bloque reutilizable (idéntico) para Donación + Feedback
+  const SupportAndFeedback = ({ withTopBorder }: { withTopBorder: boolean }) => (
+    <>
+      {/* ✅ Donación */}
+      <div className={(withTopBorder ? "mt-5 border-t border-black/10 pt-4" : "")}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-black/70 sm:pr-6">
+            <p className="font-semibold text-black">¿Te fue de ayuda?</p>
+            <p>Si quieres apoyar el proyecto, puedes hacerlo con Mercado Pago.</p>
+          </div>
+
+          <div className="w-full sm:w-auto">
+            <a href={DONATE_URL} target="_blank" rel="noopener noreferrer" className={supportButtonClass}>
+              Apoyar con Mercado Pago
+            </a>
+
+            <div className="mt-1 w-full sm:w-[240px] text-xs text-black/50 text-center sm:text-right">
+              Se abre en una pestaña nueva.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Separador */}
+      <div className="my-4 h-px w-full bg-black/10" />
+
+      {/* ✅ Feedback */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-black/70">
+          <p className="font-semibold text-black">¿Te gustaría dejarme un feedback?</p>
+          <p>No te tomará más de 30 segundos</p>
+        </div>
+
+        <div className="w-full sm:w-auto">
+          <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className={supportButtonClass}>
+            Enviar feedback
+          </a>
+
+          <div className="mt-1 w-full sm:w-[240px] text-xs text-black/50 text-center sm:text-right">
+            Se abre en una pestaña nueva.
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <main className={"min-h-screen " + BG + " " + TEXT}>
       <div className="max-w-3xl mx-auto px-4 py-10">
         {/* Header: en móvil centrado + logo arriba / en web texto izq + logo der */}
         <div className="flex flex-col-reverse items-center text-center sm:flex-row sm:items-start sm:justify-between sm:text-left gap-6">
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-              Revisa tu CV para mejorar tus oportunidades
-            </h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Revisa tu CV para mejorar tus oportunidades</h1>
             <p className={"text-sm mt-2 " + MUTED}>
-              Sube tu CV en PDF (máximo 2 páginas). Te devolveré un informe ejecutivo con fixes concretos y 3 cargos recomendados de acuerdo a tu esperiencia y habilidades.
+              Sube tu CV en PDF (máximo 2 páginas). Te devolveré un informe ejecutivo con fixes concretos y 3 cargos recomendados de
+              acuerdo a tu experiencia y habilidades.
             </p>
           </div>
 
           <div className="shrink-0 w-full sm:w-auto flex justify-center sm:justify-end">
             <div className="rounded-2xl bg-white/70 border border-black/10 shadow-[0_12px_30px_rgba(15,23,42,0.06)] px-3 py-2">
-              <img
-                src="/logo-v2.png"
-                alt="ReviCV"
-                className="h-16 w-auto object-contain"
-                draggable={false}
-              />
+              <img src="/logo-v2.png" alt="ReviCV" className="h-16 w-auto object-contain" draggable={false} />
             </div>
           </div>
         </div>
@@ -219,9 +265,12 @@ export default function Home() {
         <div className={"mt-6 rounded-2xl p-5 space-y-4 relative " + CARD} aria-busy={loading}>
           {/* ✅ Overlay “pro”: difumina + oscurece + no deja ver “otra carga” debajo */}
           {loading && (
-            <div className="absolute inset-0 rounded-2xl bg-black/20 backdrop-blur-md flex items-center justify-center z-50">
-              <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-5 py-4 shadow-[0_12px_40px_rgba(0,0,0,0.20)]">
-                <Spinner className="h-5 w-5 text-[#5C7CFA]" />
+            <div className="absolute inset-0 rounded-2xl bg-slate-900/10 backdrop-blur-md flex items-center justify-center z-50">
+              <div className="w-[92%] max-w-xl flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-5 py-4 shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
+                <div className="h-10 w-10 rounded-xl overflow-hidden bg-black flex items-center justify-center">
+                  <video className="h-full w-full object-cover" src="/logo-loader.mp4" autoPlay muted loop playsInline />
+                </div>
+
                 <div className="text-sm text-black">
                   Analizando<LoadingDots active={loading} />
                   <div className={"text-xs mt-0.5 " + MUTED}>Esto puede tomar unos segundos</div>
@@ -243,19 +292,17 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:flex sm:flex-row gap-3">
-            <button
-              onClick={analyze}
-              disabled={!file || loading}
-              className={primaryButtonClass + " w-full sm:w-auto"}
-            >
-              <span className={loading ? "invisible" : "inline-flex items-center gap-2"}>Analizar CV</span>
+            <button onClick={analyze} disabled={!file || loading} className={primaryButtonClass}>
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  Analizando<LoadingDots active={loading} />
+                </span>
+              ) : (
+                "Analizar CV"
+              )}
             </button>
 
-            <button
-              onClick={downloadPdf}
-              disabled={!result || loading}
-              className={primaryButtonClass + " w-full sm:w-auto"}
-            >
+            <button onClick={downloadPdf} disabled={!result || loading} className={primaryButtonClass + " w-full sm:w-auto"}>
               Descargar reporte PDF
             </button>
 
@@ -264,70 +311,14 @@ export default function Home() {
             </span>
           </div>
 
-
-          {/* ✅ Donación (footer dentro de la card) */}
-          <div className="mt-5 border-t border-black/10 pt-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* Copy */}
-              <div className="text-sm text-black/70 sm:pr-6">
-                <p className="font-semibold text-black">¿Te fue de ayuda?</p>
-                <p>Si quieres apoyar el proyecto, puedes hacerlo con Mercado Pago.</p>
-              </div>
-
-
-              {/* CTA */}
-              <div className="w-full sm:w-auto">
-                <a
-                  href={DONATE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={supportButtonClass}
-                >
-                  Apoyar con Mercado Pago
-                </a>
-
-                <div className="mt-1 w-full sm:w-[240px] text-xs text-black/50 text-center sm:text-right">
-                  Se abre en una pestaña nueva.
-                </div>
-              </div>
-
-            </div>
-          </div>
-          {/* Separador */}
-          <div className="my-4 h-px w-full bg-black/10" />
-
-          {/* Bloque Feedback */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-black/70">
-              <p className="font-semibold text-black">¿Te gustaría dejarme un feedback?</p>
-              <p>No te tomará más de 30 segundos</p>
-            </div>
-            <div className="w-full sm:w-auto">
-              <a
-                href={FEEDBACK_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={supportButtonClass}
-              >
-                Enviar feedback
-              </a>
-
-              <div className="mt-1 w-full sm:w-[240px] text-xs text-black/50 text-center sm:text-right">
-                Se abre en una pestaña nueva.
-              </div>
-            </div>
-
-          </div>
+          {/* ✅ SOLO ANTES del reporte (cuando NO hay result) */}
+          {!result && <SupportAndFeedback withTopBorder={true} />}
 
           {error && <p className="text-sm">{error}</p>}
 
-          {uiMsg && (
-            <pre className="text-xs whitespace-pre-wrap rounded-xl border border-black p-3">{uiMsg}</pre>
-          )}
+          {uiMsg && <pre className="text-xs whitespace-pre-wrap rounded-xl border border-black p-3">{uiMsg}</pre>}
 
-          {errorDetail && (
-            <pre className="mt-2 whitespace-pre-wrap rounded-xl border border-black p-3 text-xs">{errorDetail}</pre>
-          )}
+          {errorDetail && <pre className="mt-2 whitespace-pre-wrap rounded-xl border border-black p-3 text-xs">{errorDetail}</pre>}
         </div>
 
         {result && (
@@ -487,6 +478,15 @@ export default function Home() {
               <button onClick={downloadPdf} disabled={loading} className={"mt-3 " + primaryButtonClass}>
                 Descargar reporte PDF
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ SOLO DESPUÉS del reporte (cuando SÍ hay result) */}
+        {result && (
+          <div className="mt-8">
+            <div className={CARD + " p-5"}>
+              <SupportAndFeedback withTopBorder={false} />
             </div>
           </div>
         )}
