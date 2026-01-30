@@ -58,10 +58,10 @@ export default function Home() {
   const [uiMsg, setUiMsg] = useState<string | null>(null);
   const supportButtonClass =
     "inline-flex items-center justify-center text-center whitespace-nowrap " +
-    "rounded-xl px-5 py-2.5 text-sm font-semibold text-white " +
-    "w-[220px] sm:w-[240px] " +
-    "bg-[#5B7CFF] hover:bg-[#4C6FFF] active:bg-[#3F63FF] " +
-    "shadow-[0_8px_22px_rgba(91,124,255,0.28)] border border-black/10";
+  "rounded-xl px-5 py-2.5 text-sm font-semibold text-white " +
+  "w-full sm:w-[240px] " +
+  "bg-[#5B7CFF] hover:bg-[#4C6FFF] active:bg-[#3F63FF] " +
+  "shadow-[0_8px_22px_rgba(91,124,255,0.28)] border border-black/10";
 
   // ✅ LINK DONACIÓN (monto libre) — reemplaza por tu link real:
   const DONATE_URL = "https://link.mercadopago.cl/revicv";
@@ -194,7 +194,7 @@ export default function Home() {
     <main className={"min-h-screen " + BG + " " + TEXT}>
       <div className="max-w-3xl mx-auto px-4 py-10">
         {/* Header: en móvil centrado + logo arriba / en web texto izq + logo der */}
-        <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:justify-between sm:text-left gap-6">
+        <div className="flex flex-col-reverse items-center text-center sm:flex-row sm:items-start sm:justify-between sm:text-left gap-6">
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
               Revisa tu CV para mejorar tus oportunidades
@@ -204,7 +204,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="shrink-0">
+          <div className="shrink-0 w-full sm:w-auto flex justify-center sm:justify-end">
             <div className="rounded-2xl bg-white/70 border border-black/10 shadow-[0_12px_30px_rgba(15,23,42,0.06)] px-3 py-2">
               <img
                 src="/logo-v2.png"
@@ -242,12 +242,20 @@ export default function Home() {
             {fileMsg && <p className={"text-sm mt-2 " + MUTED}>{fileMsg}</p>}
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <button onClick={analyze} disabled={!file || loading} className={primaryButtonClass}>
+          <div className="grid grid-cols-1 sm:flex sm:flex-row gap-3">
+            <button
+              onClick={analyze}
+              disabled={!file || loading}
+              className={primaryButtonClass + " w-full sm:w-auto"}
+            >
               <span className={loading ? "invisible" : "inline-flex items-center gap-2"}>Analizar CV</span>
             </button>
 
-            <button onClick={downloadPdf} disabled={!result || loading} className={primaryButtonClass}>
+            <button
+              onClick={downloadPdf}
+              disabled={!result || loading}
+              className={primaryButtonClass + " w-full sm:w-auto"}
+            >
               Descargar reporte PDF
             </button>
 
@@ -256,17 +264,19 @@ export default function Home() {
             </span>
           </div>
 
+
           {/* ✅ Donación (footer dentro de la card) */}
           <div className="mt-5 border-t border-black/10 pt-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               {/* Copy */}
-              <p className="text-sm text-black/70 sm:pr-6">
-              <p className="font-semibold text-black">¿Te fue de ayuda?</p>{" "}
-                Si quieres apoyar el proyecto, puedes hacerlo con Mercado Pago.
-              </p>
+              <div className="text-sm text-black/70 sm:pr-6">
+                <p className="font-semibold text-black">¿Te fue de ayuda?</p>
+                <p>Si quieres apoyar el proyecto, puedes hacerlo con Mercado Pago.</p>
+              </div>
+
 
               {/* CTA */}
-              <div className="flex flex-col sm:items-end gap-1">
+              <div className="w-full sm:w-auto">
                 <a
                   href={DONATE_URL}
                   target="_blank"
@@ -275,36 +285,39 @@ export default function Home() {
                 >
                   Apoyar con Mercado Pago
                 </a>
-                <span className="text-xs text-black/50">Se abre en una pestaña nueva.</span>
+
+                <div className="mt-1 w-full sm:w-[240px] text-xs text-black/50 text-center sm:text-right">
+                  Se abre en una pestaña nueva.
+                </div>
               </div>
+
             </div>
           </div>
           {/* Separador */}
           <div className="my-4 h-px w-full bg-black/10" />
 
           {/* Bloque Feedback */}
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-black/70">
-            <p className="font-semibold text-black">¿Te gustaría dejarme un feedback?</p>{" "}
-            No te tomará más de 30 segundos
-            </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-black/70">
+              <p className="font-semibold text-black">¿Te gustaría dejarme un feedback?</p>
+              <p>No te tomará más de 30 segundos</p>
+            </div>
+            <div className="w-full sm:w-auto">
+              <a
+                href={FEEDBACK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={supportButtonClass}
+              >
+                Enviar feedback
+              </a>
 
+              <div className="mt-1 w-full sm:w-[240px] text-xs text-black/50 text-center sm:text-right">
+                Se abre en una pestaña nueva.
+              </div>
+            </div>
 
-            <a
-              href={FEEDBACK_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={supportButtonClass}
-            >
-              Enviar feedback
-            </a>
           </div>
-
-          <p className="mt-1 text-xs text-black/50 text-right">
-            Se abre en una pestaña nueva.
-          </p>
-
-
 
           {error && <p className="text-sm">{error}</p>}
 
