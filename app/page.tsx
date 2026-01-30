@@ -25,13 +25,7 @@ function Spinner({ className = "" }: { className?: string }) {
   return (
     <svg className={"animate-spin " + className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" className="opacity-25" />
-      <path
-        d="M21 12a9 9 0 0 0-9-9"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        className="opacity-90"
-      />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="opacity-90" />
     </svg>
   );
 }
@@ -62,19 +56,19 @@ export default function Home() {
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [fileMsg, setFileMsg] = useState<string | null>(null);
   const [uiMsg, setUiMsg] = useState<string | null>(null);
+  const supportButtonClass =
+    "inline-flex items-center justify-center text-center whitespace-nowrap " +
+    "rounded-xl px-5 py-2.5 text-sm font-semibold text-white " +
+    "w-[220px] sm:w-[240px] " +
+    "bg-[#5B7CFF] hover:bg-[#4C6FFF] active:bg-[#3F63FF] " +
+    "shadow-[0_8px_22px_rgba(91,124,255,0.28)] border border-black/10";
 
-  // 🎨 Paleta alineada al logo (azul pastel + grises elegantes)
-  const BG = "bg-[#E9EDF3]"; // gris suave elegante
-  const CARD = "bg-white border border-black/10 shadow-[0_10px_30px_rgba(15,23,42,0.08)]";
-  const TEXT = "text-[#0F172A]"; // slate-900
-  const MUTED = "text-[#334155]"; // slate-700
-  const MUTED2 = "text-[#475569]"; // slate-600
+  // ✅ LINK DONACIÓN (monto libre) — reemplaza por tu link real:
+  const DONATE_URL = "https://mpago.la/TU_LINK";
+  const FEEDBACK_URL = "https://forms.gle/Ccrg6NscVBY8xxjv6";
 
-  // Botones: primario azul pastel, secundario neutro
   const primaryButtonClass =
-    "rounded-xl bg-[#6D83FF] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(109,131,255,0.35)] hover:bg-[#5C73FF] active:bg-[#526AFF] disabled:opacity-50 disabled:cursor-not-allowed transition";
-  const secondaryButtonClass =
-    "rounded-xl border border-black/15 bg-white px-4 py-2 text-sm font-semibold text-[#0F172A] hover:bg-black/5 disabled:opacity-50 disabled:cursor-not-allowed transition";
+    "rounded-lg border border-black bg-white px-4 py-2 text-sm text-black cursor-pointer hover:bg-black hover:text-white disabled:opacity-50 disabled:cursor-not-allowed";
 
   function onPickFile(f: File | null) {
     setResult(null);
@@ -178,7 +172,6 @@ export default function Home() {
 
       const a = document.createElement("a");
       a.href = url;
-      // ⚠️ Mantengo tu nombre actual aquí. Si ya lo cambiaste a reporte-reviCV, edita acá también.
       a.download = "reporte-ats.pdf";
       document.body.appendChild(a);
       a.click();
@@ -191,54 +184,47 @@ export default function Home() {
     }
   }
 
+  // ✅ Colores (si ya los tenías definidos, déjalos como están)
+  const BG = "bg-[#E9EEF6]";
+  const TEXT = "text-black";
+  const MUTED = "text-black/70";
+  const CARD = "bg-white border border-black rounded-2xl";
+
   return (
     <main className={"min-h-screen " + BG + " " + TEXT}>
       <div className="max-w-3xl mx-auto px-4 py-10">
-        {/* Header: móvil = logo arriba, texto abajo | desktop = texto izq, logo der */}
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-          {/* Logo */}
-          <div className="w-full sm:w-auto flex justify-center sm:justify-end order-1 sm:order-2">
+        {/* Header: en móvil centrado + logo arriba / en web texto izq + logo der */}
+        <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:justify-between sm:text-left gap-6">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+              Revisa tu CV para mejorar tus oportunidades
+            </h1>
+            <p className={"text-sm mt-2 " + MUTED}>
+              Sube tu CV en PDF (máximo 2 páginas). Te devolveré un informe ejecutivo con fixes concretos y 3 cargos recomendados de acuerdo a tu esperiencia y habilidades.
+            </p>
+          </div>
+
+          <div className="shrink-0">
             <div className="rounded-2xl bg-white/70 border border-black/10 shadow-[0_12px_30px_rgba(15,23,42,0.06)] px-3 py-2">
               <img
                 src="/logo-v2.png"
                 alt="ReviCV"
-                className="h-14 w-auto sm:h-16 object-contain"
+                className="h-16 w-auto object-contain"
                 draggable={false}
               />
             </div>
           </div>
-
-  {/* Texto */}
-  <div className="min-w-0 order-2 sm:order-1">
-    <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-      Revisa tu CV para mejorar tus oportunidades
-    </h1>
-    <p className={"text-sm mt-2 " + MUTED}>
-      Sube tu CV en PDF (máximo 2 páginas). Te devolvemos un informe ejecutivo con fixes concretos y tus 3 mejores cargos recomendados.
-    </p>
-  </div>
-</div>
-
+        </div>
 
         <div className={"mt-6 rounded-2xl p-5 space-y-4 relative " + CARD} aria-busy={loading}>
-          {/* Overlay “pro”: difumina + oscurece + no deja ver “otra carga” debajo */}
+          {/* ✅ Overlay “pro”: difumina + oscurece + no deja ver “otra carga” debajo */}
           {loading && (
-            <div className="absolute inset-0 rounded-2xl bg-indigo-900/10 backdrop-blur-md flex items-center justify-center z-50">
+            <div className="absolute inset-0 rounded-2xl bg-black/20 backdrop-blur-md flex items-center justify-center z-50">
               <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-5 py-4 shadow-[0_12px_40px_rgba(0,0,0,0.20)]">
-                <div className="h-12 w-12 rounded-xl overflow-hidden border border-black/10 bg-white flex items-center justify-center shrink-0">
-                  <video
-                    className="h-full w-full object-contain"
-                    src="/logo-loader.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="none"
-                  />
-                </div>
-                <div className="text-sm">
+                <Spinner className="h-5 w-5 text-[#5C7CFA]" />
+                <div className="text-sm text-black">
                   Analizando<LoadingDots active={loading} />
-                  <div className={"text-xs mt-0.5 " + MUTED2}>Esto puede tomar unos segundos</div>
+                  <div className={"text-xs mt-0.5 " + MUTED}>Esto puede tomar unos segundos</div>
                 </div>
               </div>
             </div>
@@ -249,11 +235,11 @@ export default function Home() {
             <input
               type="file"
               accept="application/pdf"
-              className="mt-2 block w-full text-sm cursor-pointer file:mr-3 file:rounded-xl file:border file:border-black/15 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0F172A] file:cursor-pointer hover:file:bg-black/5"
+              className="mt-2 block w-full text-sm cursor-pointer file:mr-3 file:rounded-lg file:border file:border-black file:bg-white file:px-3 file:py-2 file:text-sm file:text-black file:cursor-pointer hover:file:bg-black hover:file:text-white"
               onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
               disabled={loading}
             />
-            {fileMsg && <p className={"text-sm mt-2 " + MUTED2}>{fileMsg}</p>}
+            {fileMsg && <p className={"text-sm mt-2 " + MUTED}>{fileMsg}</p>}
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -261,7 +247,7 @@ export default function Home() {
               <span className={loading ? "invisible" : "inline-flex items-center gap-2"}>Analizar CV</span>
             </button>
 
-            <button onClick={downloadPdf} disabled={!result || loading} className={secondaryButtonClass}>
+            <button onClick={downloadPdf} disabled={!result || loading} className={primaryButtonClass}>
               Descargar reporte PDF
             </button>
 
@@ -270,47 +256,95 @@ export default function Home() {
             </span>
           </div>
 
-          {error && <p className={"text-sm " + MUTED2}>{error}</p>}
+          {/* ✅ Donación (footer dentro de la card) */}
+          <div className="mt-5 border-t border-black/10 pt-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {/* Copy */}
+              <p className="text-sm text-black/70 sm:pr-6">
+                <p className="font-semibold text-black">¿Te fue de ayuda?</p>{" "}
+                Si quieres apoyar el proyecto, puedes hacerlo con Mercado Pago.
+              </p>
+
+              {/* CTA */}
+              <div className="flex flex-col sm:items-end gap-1">
+                <a
+                  href={DONATE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={supportButtonClass}
+                >
+                  Apoyar con Mercado Pago
+                </a>
+                <span className="text-xs text-black/50">Se abre en una pestaña nueva.</span>
+              </div>
+            </div>
+          </div>
+          {/* Separador */}
+          <div className="my-4 h-px w-full bg-black/10" />
+
+          {/* Bloque Feedback */}
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-black/70">
+            <p className="font-semibold text-black">¿Te gustaría dejarme un feedback?</p>{" "}
+            No te tomará más de 30 segundos
+            </p>
+
+
+            <a
+              href={FEEDBACK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={supportButtonClass}
+            >
+              Enviar feedback
+            </a>
+          </div>
+
+          <p className="mt-1 text-xs text-black/50 text-right">
+            Se abre en una pestaña nueva.
+          </p>
+
+
+
+          {error && <p className="text-sm">{error}</p>}
 
           {uiMsg && (
-            <pre className="text-xs whitespace-pre-wrap rounded-xl border border-black/10 bg-white/70 p-3">{uiMsg}</pre>
+            <pre className="text-xs whitespace-pre-wrap rounded-xl border border-black p-3">{uiMsg}</pre>
           )}
 
           {errorDetail && (
-            <pre className="mt-2 whitespace-pre-wrap rounded-xl border border-black/10 bg-white/70 p-3 text-xs">
-              {errorDetail}
-            </pre>
+            <pre className="mt-2 whitespace-pre-wrap rounded-xl border border-black p-3 text-xs">{errorDetail}</pre>
           )}
         </div>
 
         {result && (
           <div className="mt-8 space-y-6">
-            <div className={"rounded-2xl p-5 " + CARD}>
+            <div className={CARD + " p-5"}>
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">ATS Score</h2>
                 <span className="text-2xl font-bold">{result.ats_score}/100</span>
               </div>
-              <ul className={"mt-3 list-disc pl-5 text-sm space-y-1 " + MUTED}>
+              <ul className="mt-3 list-disc pl-5 text-sm space-y-1">
                 {result.summary.map((s, i) => (
                   <li key={i}>{s}</li>
                 ))}
               </ul>
             </div>
 
-            <div className={"rounded-2xl p-5 " + CARD}>
+            <div className={CARD + " p-5"}>
               <h2 className="text-lg font-semibold">Top 3 cargos recomendados</h2>
 
               <div className="mt-3 space-y-4">
                 {result.best_matches.map((m, idx) => (
-                  <div key={idx} className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                  <div key={idx} className="rounded-xl border border-black p-4">
                     <div className="flex items-center justify-between">
-                      <p className="font-semibold">{m.role}</p>
+                      <p className="font-medium">{m.role}</p>
                       <p className="text-sm font-semibold">{m.match_score}/100</p>
                     </div>
 
                     <div className="mt-3">
                       <p className="text-sm font-semibold">Por qué calzas</p>
-                      <ul className={"mt-1 list-disc pl-5 text-sm space-y-1 " + MUTED}>
+                      <ul className="mt-1 list-disc pl-5 text-sm space-y-1">
                         {m.why_fit.map((x, i) => (
                           <li key={i}>{x}</li>
                         ))}
@@ -321,10 +355,7 @@ export default function Home() {
                       <p className="text-sm font-semibold">Keywords faltantes</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {m.missing_keywords.map((k, i) => (
-                          <span
-                            key={i}
-                            className="text-xs bg-white border border-black/10 rounded-full px-3 py-1 text-[#0F172A] shadow-[0_6px_14px_rgba(15,23,42,0.06)]"
-                          >
+                          <span key={i} className="text-xs bg-white border border-black rounded-full px-3 py-1">
                             {k}
                           </span>
                         ))}
@@ -333,7 +364,7 @@ export default function Home() {
 
                     <div className="mt-3">
                       <p className="text-sm font-semibold">Cambios recomendados</p>
-                      <ul className={"mt-1 list-disc pl-5 text-sm space-y-1 " + MUTED}>
+                      <ul className="mt-1 list-disc pl-5 text-sm space-y-1">
                         {m.recommended_changes.map((x, i) => (
                           <li key={i}>{x}</li>
                         ))}
@@ -344,53 +375,50 @@ export default function Home() {
               </div>
             </div>
 
-            <div className={"rounded-2xl p-5 " + CARD}>
+            <div className={CARD + " p-5"}>
               <h2 className="text-lg font-semibold">Top fixes (prioridad)</h2>
               <div className="mt-3 space-y-4">
                 {result.top_fixes.map((f, i) => (
-                  <div key={i} className="rounded-2xl border border-black/10 bg-white/70 p-4">
-                    <p className="font-semibold">
+                  <div key={i} className="rounded-xl border border-black p-4">
+                    <p className="font-medium">
                       {i + 1}. {f.title}
                     </p>
-                    <p className={"text-sm mt-1 " + MUTED}>{f.why}</p>
-                    <p className={"text-sm mt-2 " + MUTED}>
-                      <span className="font-semibold text-[#0F172A]">Ejemplo:</span> {f.example_fix}
+                    <p className="text-sm mt-1">{f.why}</p>
+                    <p className="text-sm mt-2">
+                      <span className="font-medium">Ejemplo:</span> {f.example_fix}
                     </p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className={"rounded-2xl p-5 " + CARD}>
+            <div className={CARD + " p-5"}>
               <h2 className="text-lg font-semibold">Checklist ATS</h2>
               <div className="mt-3 space-y-2">
                 {result.ats_checklist.map((c, i) => (
-                  <div key={i} className={"flex items-start gap-2 text-sm " + MUTED}>
-                    <span className="mt-0.5">{c.status === "ok" ? "✅" : "⚠️"}</span>
+                  <div key={i} className="flex items-start gap-2 text-sm">
+                    <span>{c.status === "ok" ? "✅" : "⚠️"}</span>
                     <div>
-                      <p className="text-[#0F172A] font-semibold">{c.item}</p>
-                      <p className={MUTED}>{c.note}</p>
+                      <p>{c.item}</p>
+                      <p>{c.note}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className={"rounded-2xl p-5 " + CARD}>
+            <div className={CARD + " p-5"}>
               <h2 className="text-lg font-semibold">Keywords sugeridas</h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {result.suggested_keywords.map((k, i) => (
-                  <span
-                    key={i}
-                    className="text-xs bg-white border border-black/10 rounded-full px-3 py-1 text-[#0F172A] shadow-[0_6px_14px_rgba(15,23,42,0.06)]"
-                  >
+                  <span key={i} className="text-xs bg-white border border-black rounded-full px-3 py-1">
                     {k}
                   </span>
                 ))}
               </div>
             </div>
 
-            <div className={"rounded-2xl p-5 " + CARD}>
+            <div className={CARD + " p-5"}>
               <h2 className="text-lg font-semibold">Bullets reescritos</h2>
 
               <div className="mt-3 space-y-4">
@@ -398,29 +426,29 @@ export default function Home() {
                   const hasOriginal = (b.original || "").trim().length > 0;
 
                   return (
-                    <div key={i} className="rounded-2xl border border-black/10 bg-white/70 p-4">
-                      <div className={"text-xs font-semibold " + MUTED2}>#{i + 1}</div>
+                    <div key={i} className="rounded-xl border border-black p-4">
+                      <div className="text-xs font-semibold">#{i + 1}</div>
 
                       <div className="mt-3 grid gap-3">
-                        <div className="rounded-xl border border-black/10 bg-white p-3">
-                          <div className={"text-xs font-semibold " + MUTED2}>Original</div>
-                          <div className={"mt-1 text-sm whitespace-pre-wrap " + MUTED}>
+                        <div className="rounded-lg border border-black p-3">
+                          <div className="text-xs font-semibold">Original</div>
+                          <div className="mt-1 text-sm whitespace-pre-wrap">
                             {hasOriginal ? (
                               <>
                                 <span className="mr-2">•</span>
                                 {b.original}
                               </>
                             ) : (
-                              <span className="text-black/60">
+                              <span className="text-black/70">
                                 No detectado en el PDF (posible tabla/imagen/columnas). Igual te dejamos una propuesta abajo.
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className="rounded-xl border border-black/10 bg-white p-3">
-                          <div className={"text-xs font-semibold " + MUTED2}>Mejorado</div>
-                          <div className={"mt-1 text-sm whitespace-pre-wrap " + MUTED}>
+                        <div className="rounded-lg border border-black p-3">
+                          <div className="text-xs font-semibold">Mejorado</div>
+                          <div className="mt-1 text-sm whitespace-pre-wrap">
                             <span className="mr-2">•</span>
                             {b.improved}
                           </div>
@@ -432,18 +460,18 @@ export default function Home() {
               </div>
             </div>
 
-            <div className={"rounded-2xl p-5 " + CARD}>
+            <div className={CARD + " p-5"}>
               <h2 className="text-lg font-semibold">Estructura recomendada</h2>
-              <ol className={"mt-3 list-decimal pl-5 text-sm space-y-1 " + MUTED}>
+              <ol className="mt-3 list-decimal pl-5 text-sm space-y-1">
                 {result.template_outline.map((t, i) => (
                   <li key={i}>{t}</li>
                 ))}
               </ol>
             </div>
 
-            <div className={"rounded-2xl p-5 " + CARD}>
+            <div className={CARD + " p-5"}>
               <h2 className="text-lg font-semibold">Descargar</h2>
-              <button onClick={downloadPdf} disabled={loading} className={"mt-3 " + secondaryButtonClass}>
+              <button onClick={downloadPdf} disabled={loading} className={"mt-3 " + primaryButtonClass}>
                 Descargar reporte PDF
               </button>
             </div>
