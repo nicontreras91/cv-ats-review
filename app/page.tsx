@@ -64,7 +64,7 @@ export default function Home() {
     "shadow-[0_8px_22px_rgba(91,124,255,0.28)] border border-black/10";
 
   // ✅ LINK DONACIÓN (monto libre) — reemplaza por tu link real:
-  const DONATE_URL = "https://mpago.la/TU_LINK";
+  const DONATE_URL = "https://link.mercadopago.cl/revicv";
   const FEEDBACK_URL = "https://forms.gle/Ccrg6NscVBY8xxjv6";
 
   const primaryButtonClass =
@@ -261,7 +261,7 @@ export default function Home() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               {/* Copy */}
               <p className="text-sm text-black/70 sm:pr-6">
-                <p className="font-semibold text-black">¿Te fue de ayuda?</p>{" "}
+              <p className="font-semibold text-black">¿Te fue de ayuda?</p>{" "}
                 Si quieres apoyar el proyecto, puedes hacerlo con Mercado Pago.
               </p>
 
