@@ -165,14 +165,18 @@ const I18N = {
     outline: "Estructura recomendada",
     download: "Descargar",
     downloadAgain: "Descargar reporte PDF",
+    
+    pageTitle: "Revisa tu CV con Revi",
+    pageTitleShort: "Revi | Revisa tu CV",
+
   },
   en: {
     language: "Language",
-    title: "Review your CV to improve your chances",
+    title: "Review your Resume to improve your chances",
     subtitle:
-      "Upload your CV as a PDF (max 2 pages). You'll get an executive ATS report with concrete fixes and 3 recommended roles based on your experience and skills.",
+      "Upload your Resume as a PDF (max 2 pages). You'll get an executive ATS report with concrete fixes and 3 recommended roles based on your experience and skills.",
 
-    cvLabel: "CV (PDF)",
+    cvLabel: "Resume (PDF)",
     pickFile: "Choose file",
     noFile: "No file selected",
     pickFileHint: "PDF, max 5MB",
@@ -181,12 +185,12 @@ const I18N = {
     fileTooBig: "⚠️ File too large: max 5MB.",
     loadedOk: "✅ Uploaded successfully",
 
-    analyze: "Analyze CV",
+    analyze: "Analyze Resume",
     analyzing: "Analyzing",
     analyzingHint: "This may take a few seconds",
 
     downloadPdf: "Download PDF report",
-    reportReady: "✅ Report generated. Includes the top 3 best-matching roles based on your CV.",
+    reportReady: "✅ Report generated. Includes the top 3 best-matching roles based on your Resume.",
     pdfDownloaded: "✅ PDF downloaded.",
     errDownloadPdf: "Could not generate the PDF.",
     errAnalyzeFallback: "Analysis failed",
@@ -220,6 +224,10 @@ const I18N = {
     outline: "Recommended structure",
     download: "Download",
     downloadAgain: "Download PDF report",
+
+    pageTitle: "Review your Resume with Revi",
+    pageTitleShort: "Revi | Review your Resume",
+
   },
 } as const;
 
@@ -299,6 +307,12 @@ export default function Home() {
   }
 
   const t = I18N[lang];
+
+  useEffect(() => {
+  // ✅ Título de la pestaña según idioma
+    document.title = t.pageTitle;
+  }, [lang, t.pageTitle]);
+
 
   const supportButtonClass =
     "inline-flex items-center justify-center text-center whitespace-nowrap " +
