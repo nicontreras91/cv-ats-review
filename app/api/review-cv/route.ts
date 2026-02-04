@@ -1,5 +1,4 @@
 // ✅ Archivo: app/api/review-cv/route.ts
-
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { PDFDocument } from "pdf-lib";
@@ -41,7 +40,6 @@ const ATS_SCHEMA = {
         items: { type: "string" },
       },
 
-      // ✅ EXACTO 5
       top_fixes: {
         type: "array",
         minItems: 5,
@@ -81,7 +79,6 @@ const ATS_SCHEMA = {
         items: { type: "string" },
       },
 
-      // ✅ EXACTO 5
       rewritten_bullets: {
         type: "array",
         minItems: 5,
@@ -104,7 +101,6 @@ const ATS_SCHEMA = {
         items: { type: "string" },
       },
 
-      // ✅ EXACTO 3
       best_matches: {
         type: "array",
         minItems: 3,
@@ -144,6 +140,15 @@ export async function POST(req: Request) {
 
     const form = await req.formData();
     const file = form.get("cv");
+
+    // ✅ Idioma deseado (viene desde el front)
+    const langRaw = (form.get("lang")?.toString() || "").toLowerCase();
+    const lang: "es" | "en" = langRaw === "en" ? "en" : "es";
+
+    const outputLanguageInstruction =
+      lang === "en"
+        ? "Output language: ENGLISH. Every string field in the JSON must be in English (including bullets, notes, fixes, and role names). Do not mix languages."
+        : "Idioma de salida: ESPAÑOL. Cada campo string del JSON debe estar en español (incluyendo bullets, notas, fixes y nombres de cargos). No mezcles idiomas.";
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "No llegó el archivo 'cv' (PDF)." }, { status: 400 });
@@ -186,6 +191,9 @@ Reglas duras (NO negociables):
 - suggested_keywords: SOLO keywords ATS (sin nombres de campos como "original", "improved", "rewritten_bullets", etc).
 - NO incluyas fragmentos de JSON dentro de strings (por ejemplo: "]}, {").
 - Cada string debe ser texto humano limpio (sin llaves, sin comillas sueltas).
+- NO mezcles idiomas dentro del mismo reporte.
+
+${outputLanguageInstruction}
 `.trim();
 
     const user = `
@@ -198,6 +206,8 @@ Instrucciones:
   - why_fit (2-4 bullets)
   - missing_keywords (5-12)
   - recommended_changes (3-6 cambios concretos)
+
+${lang === "en" ? "Write the entire report in English." : "Escribe todo el reporte en español."}
 `.trim();
 
     // ✅ hacemos 2 intentos, pero SIEMPRE intentamos parsear aunque status venga "incomplete"
