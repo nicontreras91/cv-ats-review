@@ -137,10 +137,6 @@ const I18N = {
     errAnalyzeFallback: "Falló el análisis",
     openNewTab: "Se abre en una pestaña nueva.",
 
-    helpTitle: "¿Te fue de ayuda?",
-    helpBody: "Si quieres apoyar el proyecto, puedes hacerlo con Mercado Pago.",
-    support: "Apoyar con Mercado Pago",
-
     feedbackTitle: "¿Te gustaría dejarme un feedback?",
     feedbackBody: "No te tomará más de 30 segundos",
     feedbackBtn: "Enviar feedback",
@@ -321,7 +317,6 @@ export default function Home() {
     "bg-[#5B7CFF] hover:bg-[#4C6FFF] active:bg-[#3F63FF] " +
     "shadow-[0_8px_22px_rgba(91,124,255,0.28)] border border-black/10";
 
-  const DONATE_URL = "https://link.mercadopago.cl/revicv";
   const FEEDBACK_URL = "https://forms.gle/Ccrg6NscVBY8xxjv6";
 
   const primaryButtonClass =
@@ -436,7 +431,13 @@ export default function Home() {
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = "reporte-ats.pdf";
+      const fileName =
+        lang === "en"
+          ? "Resume Review Report - Revi.pdf"
+          : "Reporte de Revisión de CV - Revi.pdf";
+
+      a.download = fileName;
+
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -457,39 +458,25 @@ export default function Home() {
     <>
       <div className={withTopBorder ? "mt-5 border-t border-black/10 pt-4" : ""}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-black/70 sm:pr-6">
-            <p className="font-semibold text-black">{t.helpTitle}</p>
-            <p>{t.helpBody}</p>
+          <div className="text-sm text-black/70">
+            <p className="font-semibold text-black">{t.feedbackTitle}</p>
+            <p>{t.feedbackBody}</p>
           </div>
 
           <div className="w-full sm:w-auto">
-            <a href={DONATE_URL} target="_blank" rel="noopener noreferrer" className={supportButtonClass}>
-              {t.support}
+            <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className={supportButtonClass}>
+              {t.feedbackBtn}
             </a>
 
-            <div className="mt-1 w-full sm:w-[240px] text-xs text-black/50 text-center sm:text-right">{t.openNewTab}</div>
+            <div className="mt-1 w-full sm:w-[240px] text-xs text-black/50 text-center sm:text-right">
+              {t.openNewTab}
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div className="my-4 h-px w-full bg-black/10" />
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-black/70">
-          <p className="font-semibold text-black">{t.feedbackTitle}</p>
-          <p>{t.feedbackBody}</p>
-        </div>
-
-        <div className="w-full sm:w-auto">
-          <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className={supportButtonClass}>
-            {t.feedbackBtn}
-          </a>
-
-          <div className="mt-1 w-full sm:w-[240px] text-xs text-black/50 text-center sm:text-right">{t.openNewTab}</div>
         </div>
       </div>
     </>
   );
+
 
   const fileName = file?.name || t.noFile;
 

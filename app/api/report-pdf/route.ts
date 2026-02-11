@@ -1,8 +1,13 @@
 // app/api/report-pdf/route.ts
 import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+import path from "path";
+import { readFile } from "fs/promises";
 
 export const runtime = "nodejs";
+
+type Lang = "es" | "en";
 
 type BestMatch = {
   role: string;
@@ -25,21 +30,26 @@ type ReviewResult = {
 
 export async function POST(req: Request) {
   try {
-    const { report } = (await req.json()) as { report: ReviewResult };
+    const body = (await req.json()) as { report: ReviewResult; lang?: Lang };
+    const report = body?.report;
+    const lang: Lang = body?.lang === "en" ? "en" : "es";
 
     if (!report) {
       return NextResponse.json({ error: "No llegó el reporte." }, { status: 400 });
     }
 
-    const pdfBytes = await buildPdf(report);
+    const pdfBytes = await buildPdf(report, lang);
+
+    const filename =
+      lang === "en"
+        ? "Resume Review Report - Revi.pdf"
+        : "Reporte de Revisión de CV - Revi.pdf";
 
     return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        // ✅ Nombre solicitado (sin .pdf)
-        // Ojo: algunos navegadores igual le agregan .pdf por tipo MIME/OS, pero el nombre base será este.
-        "Content-Disposition": `attachment; filename="reporte-reviCV"`,
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
   } catch (err: any) {
@@ -47,10 +57,9 @@ export async function POST(req: Request) {
   }
 }
 
-async function buildPdf(r: ReviewResult) {
+async function buildPdf(r: ReviewResult, lang: Lang) {
   const pdf = await PDFDocument.create();
-  const fontRegular = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  pdf.registerFontkit(fontkit);
 
   // A4
   const PAGE_W = 595.28;
@@ -80,8 +89,32 @@ async function buildPdf(r: ReviewResult) {
     if (y - space < M) newPage();
   }
 
-  function drawText(txt: string, x: number, yy: number, size: number, bold = false, color = BLACK) {
-    page.drawText(txt, { x, y: yy, size, font: bold ? fontBold : fontRegular, color });
+  // -------- Fonts (Noto Sans, subset:false) with fallback --------
+  let fontRegular: any;
+  let fontBold: any;
+
+  try {
+    const regularPath = path.join(process.cwd(), "public", "fonts", "NotoSans-Regular.ttf");
+    const boldPath = path.join(process.cwd(), "public", "fonts", "NotoSans-Bold.ttf");
+    const [regularBytes, boldBytes] = await Promise.all([readFile(regularPath), readFile(boldPath)]);
+
+    fontRegular = await pdf.embedFont(regularBytes, { subset: false });
+    fontBold = await pdf.embedFont(boldBytes, { subset: false });
+  } catch {
+    // fallback seguro
+    fontRegular = await pdf.embedFont(StandardFonts.Helvetica);
+    fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  }
+
+  function drawText(
+    txt: string,
+    x: number,
+    yy: number,
+    size: number,
+    bold = false,
+    color = BLACK
+  ) {
+    page.drawText(txt || "", { x, y: yy, size, font: bold ? fontBold : fontRegular, color });
   }
 
   function drawLine(x1: number, yy: number, x2: number, thickness = 1) {
@@ -120,60 +153,46 @@ async function buildPdf(r: ReviewResult) {
 
   function bulletList(items: string[], size = body) {
     const maxWidth = PAGE_W - M * 2 - 14;
+
     for (const it of items) {
       if (!it) continue;
       ensure(18);
-      drawText("•", M, y, size, true);
+      drawText("•", M, y, size, true, GRAY);
       const lines = wrapText(it, maxWidth, size);
-      drawText(lines[0], M + 14, y, size, false);
+      drawText(lines[0], M + 14, y, size, false, BLACK);
       y -= 14;
+
       for (let i = 1; i < lines.length; i++) {
         ensure(14);
-        drawText(lines[i], M + 14, y, size, false);
+        drawText(lines[i], M + 14, y, size, false, BLACK);
         y -= 14;
       }
       y -= 2;
     }
   }
 
-  function pillRow(items: string[]) {
-    const maxW = PAGE_W - M * 2;
-    let x = M;
-    let rowY = y;
+  // ✅ Bullets compactos para keywords (en vez de pills)
+  function bulletKeywords(items: string[], size = body) {
+    const clean = (items || []).map((x) => (x || "").trim()).filter(Boolean);
+    if (!clean.length) return;
 
-    const padX = 8;
-    const padY = 5;
-    const boxH = small + padY * 2;
+    const maxWidth = PAGE_W - M * 2 - 14;
 
-    for (const k of items) {
-      const label = (k || "").trim();
-      if (!label) continue;
+    for (const it of clean) {
+      ensure(16);
+      drawText("•", M, y, size, true, GRAY);
+      const lines = wrapText(it, maxWidth, size);
+      drawText(lines[0], M + 14, y, size, false, BLACK);
+      y -= 14;
 
-      const textW = fontRegular.widthOfTextAtSize(label, small);
-      const boxW = textW + padX * 2;
-
-      if (x + boxW > M + maxW) {
-        y -= boxH + 10;
-        ensure(0);
-        x = M;
-        rowY = y;
+      for (let i = 1; i < lines.length; i++) {
+        ensure(14);
+        drawText(lines[i], M + 14, y, size, false, BLACK);
+        y -= 14;
       }
-
-      page.drawRectangle({
-        x,
-        y: rowY - padY,
-        width: boxW,
-        height: boxH,
-        borderColor: BLACK,
-        borderWidth: 1,
-        color: LIGHT,
-      });
-
-      drawText(label, x + padX, rowY + padY, small, false, BLACK);
-      x += boxW + 10;
     }
 
-    y -= 34;
+    y -= 6;
   }
 
   function drawCheckIcon(x: number, yy: number, size = 12) {
@@ -187,8 +206,18 @@ async function buildPdf(r: ReviewResult) {
       color: rgb(0.92, 1, 0.92),
     });
 
-    page.drawLine({ start: { x: x + 2, y: yy - size / 2 }, end: { x: x + 5, y: yy - size + 4 }, thickness: 1.6, color: rgb(0, 0.5, 0) });
-    page.drawLine({ start: { x: x + 5, y: yy - size + 4 }, end: { x: x + size - 2, y: yy - 2 }, thickness: 1.6, color: rgb(0, 0.5, 0) });
+    page.drawLine({
+      start: { x: x + 2, y: yy - size / 2 },
+      end: { x: x + 5, y: yy - size + 4 },
+      thickness: 1.6,
+      color: rgb(0, 0.5, 0),
+    });
+    page.drawLine({
+      start: { x: x + 5, y: yy - size + 4 },
+      end: { x: x + size - 2, y: yy - 2 },
+      thickness: 1.6,
+      color: rgb(0, 0.5, 0),
+    });
   }
 
   function drawWarnIcon(x: number, yy: number, size = 12) {
@@ -196,65 +225,125 @@ async function buildPdf(r: ReviewResult) {
     const left = { x, y: yy - size + 2 };
     const right = { x: x + size, y: yy - size + 2 };
 
-    page.drawRectangle({ x: x - 1, y: yy - size + 1, width: size + 2, height: size + 2, color: rgb(1, 0.98, 0.86), borderWidth: 0 });
+    page.drawRectangle({
+      x: x - 1,
+      y: yy - size + 1,
+      width: size + 2,
+      height: size + 2,
+      color: rgb(1, 0.98, 0.86),
+      borderWidth: 0,
+    });
+
     page.drawLine({ start: top, end: left, thickness: 1.2, color: BLACK });
     page.drawLine({ start: top, end: right, thickness: 1.2, color: BLACK });
     page.drawLine({ start: left, end: right, thickness: 1.2, color: BLACK });
 
-    page.drawLine({ start: { x: x + size / 2, y: yy - 3 }, end: { x: x + size / 2, y: yy - size + 6 }, thickness: 1.6, color: BLACK });
+    page.drawLine({
+      start: { x: x + size / 2, y: yy - 3 },
+      end: { x: x + size / 2, y: yy - size + 6 },
+      thickness: 1.6,
+      color: BLACK,
+    });
     page.drawCircle({ x: x + size / 2, y: yy - size + 4, size: 1.4, color: BLACK });
   }
 
-  // ✅ Título principal solicitado
-  drawText("Revisión de CV", M, y, h1, true);
+  // -------- Labels by language --------
+  const L = {
+    title: lang === "en" ? "Resume Review" : "Revisión de CV",
+    generated: lang === "en" ? "Generated" : "Generado",
+    atsScore: "ATS Score",
+    top3: lang === "en" ? "Top 3 suggested roles (best match)" : "Top 3 cargos sugeridos (mejor match)",
+    whyFit: lang === "en" ? "Why you're a fit" : "Por qué calzas",
+    missing: lang === "en" ? "Missing keywords" : "Keywords faltantes",
+    changes: lang === "en" ? "Recommended changes" : "Cambios recomendados",
+    execSummary: lang === "en" ? "Executive summary" : "Resumen ejecutivo",
+    fixes: lang === "en" ? "Top fixes (priority)" : "Top fixes (prioridad)",
+    checklist: lang === "en" ? "ATS Checklist" : "Checklist ATS",
+    suggested: lang === "en" ? "Suggested keywords" : "Keywords sugeridas",
+    bullets: lang === "en" ? "Rewritten bullets" : "Bullets reescritos",
+    original: lang === "en" ? "Original" : "Original",
+    improved: lang === "en" ? "Improved" : "Mejorado",
+    notDetected:
+      lang === "en"
+        ? "Not detected in the PDF (tables/images/columns)."
+        : "No detectado en el PDF (posible tabla/imagen/columnas).",
+    outline: lang === "en" ? "Recommended structure" : "Estructura recomendada",
+    footer: "Revi",
+  };
+
+  // -------- Header --------
+  drawText(L.title, M, y, h1, true);
   y -= 22;
 
   const date = new Date();
-  drawText(`Generado: ${date.toLocaleDateString()}`, M, y, small, false, GRAY);
+  drawText(
+    `${L.generated}: ${date.toLocaleDateString(lang === "en" ? "en-US" : "es-CL")}`,
+    M,
+    y,
+    small,
+    false,
+    GRAY
+  );
   y -= 22;
 
-  // Score card
-  ensure(86);
-  const cardH = 74;
+  // -------- ATS Score Card (same info as web: score + summary bullets) --------
+  ensure(150);
+
+  const cardH = 140; // ✅ más alto para que quepan bullets
   const cardY = y - cardH;
   card(M, cardY, PAGE_W - M * 2, cardH);
 
-  drawText("ATS Score", M + 14, y - 22, h2, true);
+  drawText(L.atsScore, M + 14, y - 22, h2, true);
   drawText(`${r.ats_score}/100`, PAGE_W - M - 120, y - 42, 26, true);
 
-  const diagnosis =
-    r.ats_score >= 85
-      ? "Muy sólido. Pulir detalles para maximizar conversión."
-      : r.ats_score >= 70
-      ? "Bueno, con oportunidades claras de mejora ATS."
-      : "Riesgo alto en ATS. Conviene reestructurar y optimizar keywords.";
+  // ✅ Bullets del summary (igual que web)
+  const cardBullets = (r.summary || []).slice(0, 5);
+  let yy = y - 60;
+  const maxWidth = PAGE_W - M * 2 - 28;
 
-  drawText(diagnosis, M + 14, y - 54, body, false, GRAY);
+  for (const s of cardBullets) {
+    if (!s) continue;
+
+    drawText("•", M + 14, yy, small, true, GRAY);
+    const lines = wrapText(s, maxWidth, small);
+    drawText(lines[0], M + 28, yy, small, false, GRAY);
+    yy -= 12;
+
+    for (let i = 1; i < lines.length; i++) {
+      ensure(12);
+      drawText(lines[i], M + 28, yy, small, false, GRAY);
+      yy -= 12;
+    }
+
+    yy -= 2;
+  }
+
   y = cardY - 26;
 
-  // Top 3 cargos sugeridos (si vienen)
+  // -------- Top 3 suggested roles --------
   const matches = Array.isArray(r.best_matches) ? r.best_matches.slice(0, 3) : [];
   if (matches.length) {
-    blockTitle("Top 3 cargos sugeridos (mejor match)");
+    blockTitle(L.top3);
 
     for (let i = 0; i < matches.length; i++) {
       const m = matches[i];
-      ensure(140);
+      ensure(170);
 
       drawText(`${i + 1}. ${m.role}`, M, y, body, true);
       drawText(`${m.match_score}/100`, PAGE_W - M - 70, y, body, true);
       y -= 14;
 
-      drawText("Por qué calzas", M, y, small, true, GRAY);
+      drawText(L.whyFit, M, y, small, true, GRAY);
       y -= 12;
       bulletList((m.why_fit || []).slice(0, 5), body);
       y -= 4;
 
-      drawText("Keywords faltantes", M, y, small, true, GRAY);
-      y -= 14;
-      pillRow((m.missing_keywords || []).slice(0, 12));
+      drawText(L.missing, M, y, small, true, GRAY);
+      y -= 12;
+      // ✅ Bullets en vez de pills
+      bulletKeywords((m.missing_keywords || []).slice(0, 12), body);
 
-      drawText("Cambios recomendados", M, y, small, true, GRAY);
+      drawText(L.changes, M, y, small, true, GRAY);
       y -= 12;
       bulletList((m.recommended_changes || []).slice(0, 6), body);
 
@@ -264,10 +353,12 @@ async function buildPdf(r: ReviewResult) {
     }
   }
 
-  blockTitle("Resumen ejecutivo");
+  // -------- Executive summary (igual que data de web, aquí completo) --------
+  blockTitle(L.execSummary);
   bulletList((r.summary || []).slice(0, 6), body);
 
-  blockTitle("Top fixes (prioridad)");
+  // -------- Top fixes --------
+  blockTitle(L.fixes);
   const fixes = (r.top_fixes || []).slice(0, 5);
   for (let i = 0; i < fixes.length; i++) {
     const f = fixes[i];
@@ -283,7 +374,8 @@ async function buildPdf(r: ReviewResult) {
       y -= 12;
     }
 
-    const ex = `Ejemplo: ${f.example_fix}`;
+    const exLabel = lang === "en" ? "Example: " : "Ejemplo: ";
+    const ex = `${exLabel}${f.example_fix}`;
     const exLines = wrapText(ex, PAGE_W - M * 2, small);
     for (const ln of exLines) {
       ensure(12);
@@ -296,7 +388,8 @@ async function buildPdf(r: ReviewResult) {
     y -= 12;
   }
 
-  blockTitle("Checklist ATS");
+  // -------- Checklist --------
+  blockTitle(L.checklist);
   const checklist = (r.ats_checklist || []).slice(0, 12);
   for (const c of checklist) {
     ensure(34);
@@ -316,10 +409,12 @@ async function buildPdf(r: ReviewResult) {
     y -= 8;
   }
 
-  blockTitle("Keywords sugeridas");
-  pillRow((r.suggested_keywords || []).slice(0, 20));
+  // -------- Suggested keywords (bullets) --------
+  blockTitle(L.suggested);
+  bulletKeywords((r.suggested_keywords || []).slice(0, 20), body);
 
-  blockTitle("Bullets reescritos");
+  // -------- Rewritten bullets --------
+  blockTitle(L.bullets);
   const bullets = (r.rewritten_bullets || []).slice(0, 5);
   for (let i = 0; i < bullets.length; i++) {
     const b = bullets[i];
@@ -328,10 +423,13 @@ async function buildPdf(r: ReviewResult) {
     drawText(`#${i + 1}`, M, y, small, true, GRAY);
     y -= 14;
 
-    drawText("Original", M, y, small, true, GRAY);
+    drawText(L.original, M, y, small, true, GRAY);
     y -= 12;
 
-    const orig = b.original?.trim() ? `• ${b.original.trim()}` : "No detectado en el PDF (posible tabla/imagen/columnas).";
+    const orig = b.original?.trim()
+      ? `• ${b.original.trim()}`
+      : L.notDetected;
+
     const origLines = wrapText(orig, PAGE_W - M * 2, body);
     for (const ln of origLines) {
       ensure(14);
@@ -341,7 +439,7 @@ async function buildPdf(r: ReviewResult) {
 
     y -= 8;
 
-    drawText("Mejorado", M, y, small, true, GRAY);
+    drawText(L.improved, M, y, small, true, GRAY);
     y -= 12;
 
     const imp = `• ${b.improved || ""}`;
@@ -357,7 +455,8 @@ async function buildPdf(r: ReviewResult) {
     y -= 14;
   }
 
-  blockTitle("Estructura recomendada");
+  // -------- Outline --------
+  blockTitle(L.outline);
   const outline = (r.template_outline || []).slice(0, 7);
   for (let i = 0; i < outline.length; i++) {
     ensure(18);
@@ -371,11 +470,11 @@ async function buildPdf(r: ReviewResult) {
     y -= 2;
   }
 
-  // Footer
+  // -------- Footer --------
   const pages = pdf.getPages();
   for (let idx = 0; idx < pages.length; idx++) {
     const p = pages[idx];
-    const footer = `reviCV • Página ${idx + 1}/${pages.length}`;
+    const footer = `${L.footer} • ${lang === "en" ? "Page" : "Página"} ${idx + 1}/${pages.length}`;
     p.drawText(footer, { x: M, y: 24, size: small, font: fontRegular, color: GRAY });
   }
 
